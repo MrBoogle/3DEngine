@@ -31,6 +31,7 @@ public:
 private:
     mesh meshCube;
     mat4x4 matProj;
+    float fTheta;
 
     void MultiplyMatrixVector(vec3d& i, vec3d& o, mat4x4& m) {
         o.x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + m.m[3][0];
@@ -79,6 +80,8 @@ public:
         float fFov = 90.0;
         float fAspectRatio = (float)ScreenHeight() / (float)ScreenWidth();
 
+        fTheta = 0.0f;
+
         float fFovRad = 1.0f / tanf(fFov * 0.5f / 180.0f * 3.14159f);
 
         matProj.m[0][0] = fAspectRatio * fFovRad;
@@ -97,12 +100,51 @@ public:
         //Clear screen
         Fill(0, 0, ScreenWidth(), ScreenHeight(), PIXEL_SOLID, FG_BLACK);
 
+
+        mat4x4 matRotZ, matRotX;
+        
+        fTheta += 1.0f * fElapsedTime;
+
+        // Rotation Z
+        matRotZ.m[0][0] = cosf(fTheta);
+        matRotZ.m[0][1] = sinf(fTheta);
+        matRotZ.m[1][0] = -sinf(fTheta);
+        matRotZ.m[1][1] = cosf(fTheta);
+        matRotZ.m[2][2] = 1;
+        matRotZ.m[3][3] = 1;
+
+        // Rotation X
+        matRotX.m[0][0] = 1;
+        matRotX.m[1][1] = cosf(fTheta * 0.5f);
+        matRotX.m[1][2] = sinf(fTheta * 0.5f);
+        matRotX.m[2][1] = -sinf(fTheta * 0.5f);
+        matRotX.m[2][2] = cosf(fTheta * 0.5f);
+        matRotX.m[3][3] = 1;
+
         //Draw triangles
         for (auto tri : meshCube.tris) {
-            triangle projected;
-            MultiplyMatrixVector(tri.p[0], projected.p[0], matProj);
-            MultiplyMatrixVector(tri.p[1], projected.p[1], matProj);
-            MultiplyMatrixVector(tri.p[2], projected.p[2], matProj);
+            triangle projected, translated, rotatedZ, rotatedZX;
+
+            // Rotate in Z-Axis
+            MultiplyMatrixVector(tri.p[0], rotatedZ.p[0], matRotZ);
+            MultiplyMatrixVector(tri.p[1], rotatedZ.p[1], matRotZ);
+            MultiplyMatrixVector(tri.p[2], rotatedZ.p[2], matRotZ);
+
+            // Rotate in X-Axis
+            MultiplyMatrixVector(rotatedZ.p[0], rotatedZX.p[0], matRotX);
+            MultiplyMatrixVector(rotatedZ.p[1], rotatedZX.p[1], matRotX);
+            MultiplyMatrixVector(rotatedZ.p[2], rotatedZX.p[2], matRotX);
+
+            // Offset into the screen
+            translated = rotatedZX;
+            translated.p[0].z = rotatedZX.p[0].z + 3.0f;
+            translated.p[1].z = rotatedZX.p[1].z + 3.0f;
+            translated.p[2].z = rotatedZX.p[2].z + 3.0f;
+
+            // Project triangles from 3D --> 2D
+            MultiplyMatrixVector(translated.p[0], projected.p[0], matProj);
+            MultiplyMatrixVector(translated.p[1], projected.p[1], matProj);
+            MultiplyMatrixVector(translated.p[2], projected.p[2], matProj);
             
 
             //Scale into view
@@ -149,7 +191,7 @@ int main()
     }
     else {
         std::cout << "Could not construct console\n";
-        return -2;
+        return -1;
     }
     return 0;
 }
