@@ -1,0 +1,9 @@
+3DEngine.sln
+3DEngine.vcxproj
+3DEngine.vcxproj.filters
+3DEngine.vcxproj.user
+Debug/
+Release/
+x64/
+.vs/
+
