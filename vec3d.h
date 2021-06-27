@@ -27,9 +27,10 @@ vec3d operator%(vec3d const& v1, vec3d const& v2);
 //Returns length of vector
 float vecLength(vec3d const& v);
 
-//Returns a normalized vector
+//Returns a normalized unit vector
 vec3d normalizeVec(vec3d const& v);
 
 //Matrix multiplication
 vec3d operator*(mat4x4 const& m, vec3d const& v1);
+
 

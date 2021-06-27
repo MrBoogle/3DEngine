@@ -39,6 +39,7 @@ mat4x4 makeRotZ(float fAngleRad) {
     m.m[1][0] = -sinf(fAngleRad);
     m.m[0][1] = sinf(fAngleRad);
     m.m[1][1] = cosf(fAngleRad);
+    m.m[2][2] = 1.0f;
     m.m[3][3] = 1.0f;
     return m;
 }
@@ -86,7 +87,7 @@ mat4x4 makeProj(float fFovDeg, float fAspectRatio, float fNear, float fFar) {
     return m;
 }
 
-mat4x4 multMat(mat4x4& m1, mat4x4& m2) {
+mat4x4 operator*(mat4x4 const& m1, mat4x4 const& m2) {
     mat4x4 mat;
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {

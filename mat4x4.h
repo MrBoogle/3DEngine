@@ -18,4 +18,4 @@ mat4x4 makeTranslation(float x, float y, float z);
 
 mat4x4 makeProj(float fFovDeg, float fAspectRatio, float fNear, float fFar);
 
-mat4x4 multMat(mat4x4& m1, mat4x4& m2);
+mat4x4 operator*(mat4x4 const& m1, mat4x4 const& m2);

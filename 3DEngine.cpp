@@ -73,17 +73,6 @@ private:
 
     float fTheta;
 
-    void MultiplyMatrixVector(vec3d& i, vec3d& o, mat4x4& m) {
-        o.x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + m.m[3][0];
-        o.y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + m.m[3][1];
-        o.z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + m.m[3][2];
-        float w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + m.m[3][3];
-
-        if (w != 0.0f)
-        {
-            o.x /= w; o.y /= w; o.z /= w;
-        }
-    }
 
     // Taken From Command Line Webcam Video of Javidx9
     CHAR_INFO GetColour(float lum)
@@ -159,14 +148,8 @@ public:
 
         fTheta = 0.0f;
 
-        float fFovRad = 1.0f / tanf(fFov * 0.5f / 180.0f * 3.14159f);
-
-        matProj.m[0][0] = fAspectRatio * fFovRad;
-        matProj.m[1][1] = fFovRad;
-        matProj.m[2][2] = fFar / (fFar - fNear);
-        matProj.m[3][2] = (-fFar * fNear) / (fFar - fNear);
-        matProj.m[2][3] = 1.0f;
-        matProj.m[3][3] = 0.0f;
+        //Make projection matrix based on screen size, aspect ratio, and fov
+        matProj = makeProj(fFov, fAspectRatio, fNear, fFar);
 
 
         return true;
@@ -183,116 +166,96 @@ public:
         fTheta += 1.0f * fElapsedTime;
 
         // Rotation Z
-        matRotZ.m[0][0] = cosf(fTheta);
-        matRotZ.m[0][1] = sinf(fTheta);
-        matRotZ.m[1][0] = -sinf(fTheta);
-        matRotZ.m[1][1] = cosf(fTheta);
-        matRotZ.m[2][2] = 1;
-        matRotZ.m[3][3] = 1;
+        matRotZ = makeRotZ(fTheta);
 
         // Rotation X
-        matRotX.m[0][0] = 1;
-        matRotX.m[1][1] = cosf(fTheta * 0.5f);
-        matRotX.m[1][2] = sinf(fTheta * 0.5f);
-        matRotX.m[2][1] = -sinf(fTheta * 0.5f);
-        matRotX.m[2][2] = cosf(fTheta * 0.5f);
-        matRotX.m[3][3] = 1;
+        matRotX = makeRotX(fTheta * 0.5);
 
         std::vector<triangle> trianglesToRaster;
 
 
         //Draw triangles
         for (auto tri : meshCube.tris) {
-            triangle projected, translated, rotatedZ, rotatedZX;
+            triangle toProj;
 
-            // Rotate in Z-Axis
-            MultiplyMatrixVector(tri.p[0], rotatedZ.p[0], matRotZ);
-            MultiplyMatrixVector(tri.p[1], rotatedZ.p[1], matRotZ);
-            MultiplyMatrixVector(tri.p[2], rotatedZ.p[2], matRotZ);
+            
+            //Create rotation around z and x axis
+            mat4x4 rot = makeRotZ(fTheta) * makeRotX(fTheta * 0.5);
 
-            // Rotate in X-Axis
-            MultiplyMatrixVector(rotatedZ.p[0], rotatedZX.p[0], matRotX);
-            MultiplyMatrixVector(rotatedZ.p[1], rotatedZX.p[1], matRotX);
-            MultiplyMatrixVector(rotatedZ.p[2], rotatedZX.p[2], matRotX);
-
-            // Offset into the screen
-            translated = rotatedZX;
-            translated.p[0].z = rotatedZX.p[0].z + 10.0f;
-            translated.p[1].z = rotatedZX.p[1].z + 10.0f;
-            translated.p[2].z = rotatedZX.p[2].z + 10.0f;
+            
+            //Rotate triangles
+            toProj.p[0] = rot * tri.p[0];
+            toProj.p[1] = rot * tri.p[1];
+            toProj.p[2] = rot * tri.p[2];
 
 
-            //Find normal vector to each surface 
+            //Offset into the screen
+            toProj = toProj;
+            toProj.p[0].z += 10.0f;
+            toProj.p[1].z += 10.0f; 
+            toProj.p[2].z += 10.0f; 
+
+
+            //Find vector from points 
             vec3d normal, line1, line2;
-            line1.x = translated.p[1].x - translated.p[0].x;
-            line1.y = translated.p[1].y - translated.p[0].y;
-            line1.z = translated.p[1].z - translated.p[0].z;
+            line1 = toProj.p[1] - toProj.p[0];
+            line2 = toProj.p[2] - toProj.p[0];
 
-            line2.x = translated.p[2].x - translated.p[0].x;
-            line2.y = translated.p[2].y - translated.p[0].y;
-            line2.z = translated.p[2].z - translated.p[0].z;
+            
 
             //Find normal using cross product
-            normal.x = line1.y * line2.z - line1.z * line2.y;
-            normal.y = line1.z * line2.x - line1.x * line2.z;
-            normal.z = line1.x * line2.y - line1.y * line2.x;
+            normal = line1 % line2;
 
 
             //Calculate length to normalize normal vector
-            float len = sqrtf(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
+            normal = normalizeVec(normal);
 
-            normal.x /= len;
-            normal.y /= len;
-            normal.z /= len;
-
-            /*if (normal.z < 0)*/ 
-            if (normal.x * (translated.p[0].x - vCamera.x)
-                + normal.y * (translated.p[0].y - vCamera.y)
-                + normal.z * (translated.p[0].z - vCamera.z)
+            //Only project triangles that are visible
+            if (normal.x * (toProj.p[0].x - vCamera.x)
+                + normal.y * (toProj.p[0].y - vCamera.y)
+                + normal.z * (toProj.p[0].z - vCamera.z)
                 < 0
                 )
             {
                 //Lighting
                 vec3d light_direction = { 0.0f, 0.0f, -1.0f };
-                float l = sqrtf(light_direction.x * light_direction.x + light_direction.y * light_direction.y + light_direction.z * light_direction.z);
-                light_direction.x /= l;
-                light_direction.y /= l;
-                light_direction.z /= l;
+                light_direction = normalizeVec(light_direction);
 
-                float dp = normal.x * light_direction.x + normal.y * light_direction.y + normal.z * light_direction.z;
+                float dp = normal * light_direction;
 
                 CHAR_INFO c = GetColour(dp);
-                translated.col = c.Attributes;
-                translated.sym = c.Char.UnicodeChar;
+                toProj.col = c.Attributes;
+                toProj.sym = c.Char.UnicodeChar;
 
                 // Project triangles from 3D --> 2D
-                MultiplyMatrixVector(translated.p[0], projected.p[0], matProj);
-                MultiplyMatrixVector(translated.p[1], projected.p[1], matProj);
-                MultiplyMatrixVector(translated.p[2], projected.p[2], matProj);
-                projected.col = c.Attributes;
-                projected.sym = c.Char.UnicodeChar;
+                toProj.p[0] = matProj * toProj.p[0];
+                toProj.p[1] = matProj * toProj.p[1];
+                toProj.p[2] = matProj * toProj.p[2];
+
+                toProj.col = c.Attributes;
+                toProj.sym = c.Char.UnicodeChar;
 
                 //Scale into view
-                projected.p[0].x += 1.0f;
-                projected.p[0].y += 1.0f;
+                toProj.p[0].x += 1.0f;
+                toProj.p[0].y += 1.0f;
 
-                projected.p[1].x += 1.0f;
-                projected.p[1].y += 1.0f;
+                toProj.p[1].x += 1.0f;
+                toProj.p[1].y += 1.0f;
 
-                projected.p[2].x += 1.0f;
-                projected.p[2].y += 1.0f;
+                toProj.p[2].x += 1.0f;
+                toProj.p[2].y += 1.0f;
 
-                projected.p[0].x *= 0.5f * (float)ScreenWidth();
-                projected.p[0].y *= 0.5f * (float)ScreenHeight();
+                toProj.p[0].x *= 0.5f * (float)ScreenWidth();
+                toProj.p[0].y *= 0.5f * (float)ScreenHeight();
 
-                projected.p[1].x *= 0.5f * (float)ScreenWidth();
-                projected.p[1].y *= 0.5f * (float)ScreenHeight();
+                toProj.p[1].x *= 0.5f * (float)ScreenWidth();
+                toProj.p[1].y *= 0.5f * (float)ScreenHeight();
 
-                projected.p[2].x *= 0.5f * (float)ScreenWidth();
-                projected.p[2].y *= 0.5f * (float)ScreenHeight();
+                toProj.p[2].x *= 0.5f * (float)ScreenWidth();
+                toProj.p[2].y *= 0.5f * (float)ScreenHeight();
 
 
-                trianglesToRaster.push_back(projected);
+                trianglesToRaster.push_back(toProj);
             }
 
         }
@@ -305,16 +268,16 @@ public:
             });
 
 
-        for (auto& projected : trianglesToRaster) {
+        for (auto& toProj : trianglesToRaster) {
             
-            FillTriangle(projected.p[0].x, projected.p[0].y,
-                projected.p[1].x, projected.p[1].y,
-                projected.p[2].x, projected.p[2].y,
-                projected.sym, projected.col);
+            FillTriangle(toProj.p[0].x, toProj.p[0].y,
+                toProj.p[1].x, toProj.p[1].y,
+                toProj.p[2].x, toProj.p[2].y,
+                toProj.sym, toProj.col);
 
-            /*DrawTriangle(projected.p[0].x, projected.p[0].y,
-                projected.p[1].x, projected.p[1].y,
-                projected.p[2].x, projected.p[2].y,
+            /*DrawTriangle(toProj.p[0].x, toProj.p[0].y,
+                toProj.p[1].x, toProj.p[1].y,
+                toProj.p[2].x, toProj.p[2].y,
                 PIXEL_SOLID, FG_WHITE);*/
         }
 
