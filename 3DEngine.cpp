@@ -7,11 +7,11 @@
 #include <strstream>
 #include <algorithm>
 #include "olcConsoleGameEngine.h"
+#include "vec3d.h"
+#include "mat4x4.h"
 
 
-struct vec3d {
-    float x, y, z;
-};
+
 
 struct triangle {
     vec3d p[3];
@@ -58,9 +58,7 @@ struct mesh {
     }
 };
 
-struct mat4x4 {
-    float m[4][4] = { 0 };
-};
+
 
 class olcEngine3D : public olcConsoleGameEngine {
 public:
@@ -152,7 +150,7 @@ public:
 
         //};
 
-        meshCube.LoadFromOBJFile("untitled.obj");
+        meshCube.LoadFromOBJFile("ps5.obj");
 
         float fNear = 0.1f;
         float fFar = 1000.0f;
@@ -219,9 +217,9 @@ public:
 
             // Offset into the screen
             translated = rotatedZX;
-            translated.p[0].z = rotatedZX.p[0].z + 8.0f;
-            translated.p[1].z = rotatedZX.p[1].z + 8.0f;
-            translated.p[2].z = rotatedZX.p[2].z + 8.0f;
+            translated.p[0].z = rotatedZX.p[0].z + 10.0f;
+            translated.p[1].z = rotatedZX.p[1].z + 10.0f;
+            translated.p[2].z = rotatedZX.p[2].z + 10.0f;
 
 
             //Find normal vector to each surface 
@@ -328,8 +326,9 @@ public:
 
 int main()
 {
-    /*std::cout << "He;;p";
-    std::string h;
+   
+    //std::cout << "He;;p";
+    /*std::string h;
     std::cin >> h;*/
     olcEngine3D demo;
     if (demo.ConstructConsole(256, 174, 4, 4)) {
