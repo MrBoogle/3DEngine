@@ -1,9 +1,17 @@
 #pragma once
 
+#ifndef _MAT4X4_
+#define _MAT4X4_
 #include "mat4x4.h"
+#endif // !_VEC3D_
+
+struct mat4x4;
 
 struct vec3d {
-    float x, y, z, w;
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+    float w = 1.0f;
 };
 
 vec3d operator+(vec3d const& v1, vec3d const& v2);

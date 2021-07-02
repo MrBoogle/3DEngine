@@ -70,8 +70,10 @@ private:
     mesh meshCube;
     mat4x4 matProj;
     vec3d vCamera;
-
+    vec3d lookDir;
     float fTheta;
+
+    float yaw;
 
 
     // Taken From Command Line Webcam Video of Javidx9
@@ -112,34 +114,8 @@ private:
 public:
     bool OnUserCreate() override {
 
-        //meshCube.tris = {
-        //    // SOUTH
-        //{ 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
-        //{ 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
 
-        //// EAST                                                      
-        //{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f },
-        //{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f },
-
-        //// NORTH                                                     
-        //{ 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f },
-        //{ 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f },
-
-        //// WEST                                                      
-        //{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f },
-        //{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f,    0.0f, 0.0f, 0.0f },
-
-        //// TOP                                                       
-        //{ 0.0f, 1.0f, 0.0f,    0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f },
-        //{ 0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f },
-
-        //// BOTTOM                                                    
-        //{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
-        //{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
-
-        //};
-
-        meshCube.LoadFromOBJFile("ps5.obj");
+        meshCube.LoadFromOBJFile("axis.obj");
 
         float fNear = 0.1f;
         float fFar = 1000.0f;
@@ -157,26 +133,71 @@ public:
 
     bool OnUserUpdate(float fElapsedTime) override {
 
+        //Move camera
+        //Up/down
+        if (GetKey(VK_UP).bHeld) {
+            vCamera.y -= 8.0f * fElapsedTime;
+        }
+        if (GetKey(VK_DOWN).bHeld) {
+            vCamera.y += 8.0f * fElapsedTime;
+        }
+        //Left/right
+        if (GetKey(VK_LEFT).bHeld) {
+            vCamera.x -= 8.0f * fElapsedTime;
+        }
+        if (GetKey(VK_RIGHT).bHeld) {
+            vCamera.x += 8.0f * fElapsedTime;
+        }
+
+        //Forward/backwards
+        vec3d forward = lookDir * 8.0f * fElapsedTime;
+        
+        if (GetKey(L'W').bHeld) {
+            vCamera = vCamera + forward;
+        }
+        if (GetKey(L'S').bHeld) {
+            vCamera = vCamera - forward;
+        }
+
+        if (GetKey(L'A').bHeld) {
+            yaw -= 2.0f * fElapsedTime;
+        }
+        if (GetKey(L'D').bHeld) {
+            yaw += 2.0f * fElapsedTime;
+        }
+
+        
+        
         //Clear screen
         Fill(0, 0, ScreenWidth(), ScreenHeight(), PIXEL_SOLID, FG_BLACK);
 
 
-        mat4x4 matRotZ, matRotX;
+        mat4x4 matRotZ, matRotX, translate;
         
         fTheta += 1.0f * fElapsedTime;
 
-        // Rotation Z
-        matRotZ = makeRotZ(fTheta);
+        
+        //Make translation matrix
+        translate = makeTranslation(0, 0, 20);
 
-        // Rotation X
-        matRotX = makeRotX(fTheta * 0.5);
+        
+        vec3d up = { 0, 1, 0 };
+        vec3d target = { 0, 0, 1 };
+        lookDir = makeRotY(yaw) * target;
+        target = vCamera + lookDir;
+
+        mat4x4 matCam = pointAt(vCamera, target, up);
+
+        mat4x4 matView = Matrix_QuickInverse(matCam);
 
         std::vector<triangle> trianglesToRaster;
 
-        
+        //Create rotation around z and x axis and translate
+        //mat4x4 rot = makeRotZ(0) * makeRotX();
+        mat4x4 rot = makeRotZ(0) * makeRotX(180) * makeRotY(0);
 
-        //Create rotation around z and x axis
-        mat4x4 rot = (makeRotZ(fTheta) * makeRotX(fTheta * 0.5) )* makeTranslation(0, 0, 10);
+        rot = rot * translate;
+
         //Draw triangles
         for (auto tri : meshCube.tris) {
             triangle toProj;
@@ -191,11 +212,7 @@ public:
             toProj.p[2] = rot * tri.p[2];
 
 
-            ////Offset into the screen
-            //toProj = toProj;
-            //toProj.p[0].z += 10.0f;
-            //toProj.p[1].z += 10.0f; 
-            //toProj.p[2].z += 10.0f; 
+            
 
 
             //Find vector from points 
@@ -203,24 +220,21 @@ public:
             line1 = toProj.p[1] - toProj.p[0];
             line2 = toProj.p[2] - toProj.p[0];
 
-            
 
             //Find normal using cross product
             normal = line1 % line2;
 
 
-            //Calculate length to normalize normal vector
+            //Create unit normal vector
             normal = normalizeVec(normal);
 
+
             //Only project triangles that are visible
-            if (normal.x * (toProj.p[0].x - vCamera.x)
-                + normal.y * (toProj.p[0].y - vCamera.y)
-                + normal.z * (toProj.p[0].z - vCamera.z)
-                < 0
-                )
+            if (normal * (toProj.p[0] - vCamera)< 0)
             {
                 //Lighting
                 vec3d light_direction = { 0.0f, 0.0f, -1.0f };
+                //light_direction = makeRotY(fTheta) * light_direction;
                 light_direction = normalizeVec(light_direction);
 
                 float dp = normal * light_direction;
@@ -229,6 +243,12 @@ public:
                 toProj.col = c.Attributes;
                 toProj.sym = c.Char.UnicodeChar;
 
+                //Convert world space to camera space
+                toProj.p[0] = matView * toProj.p[0];
+                toProj.p[1] = matView * toProj.p[1];
+                toProj.p[2] = matView * toProj.p[2];
+
+
                 // Project triangles from 3D --> 2D
                 toProj.p[0] = matProj * toProj.p[0];
                 toProj.p[1] = matProj * toProj.p[1];
@@ -236,6 +256,7 @@ public:
 
                 toProj.col = c.Attributes;
                 toProj.sym = c.Char.UnicodeChar;
+
 
                 //Scale into view
                 toProj.p[0].x += 1.0f;
@@ -269,7 +290,7 @@ public:
             return z1 > z2;
             });
 
-
+        //Draw triangles to screen
         for (auto& toProj : trianglesToRaster) {
             
             FillTriangle(toProj.p[0].x, toProj.p[0].y,
@@ -280,7 +301,7 @@ public:
             /*DrawTriangle(toProj.p[0].x, toProj.p[0].y,
                 toProj.p[1].x, toProj.p[1].y,
                 toProj.p[2].x, toProj.p[2].y,
-                PIXEL_SOLID, FG_WHITE);*/
+                PIXEL_SOLID, FG_BLACK);*/
         }
 
 
