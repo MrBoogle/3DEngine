@@ -173,14 +173,16 @@ public:
 
         std::vector<triangle> trianglesToRaster;
 
+        
 
+        //Create rotation around z and x axis
+        mat4x4 rot = (makeRotZ(fTheta) * makeRotX(fTheta * 0.5) )* makeTranslation(0, 0, 10);
         //Draw triangles
         for (auto tri : meshCube.tris) {
             triangle toProj;
 
             
-            //Create rotation around z and x axis
-            mat4x4 rot = makeRotZ(fTheta) * makeRotX(fTheta * 0.5);
+            
 
             
             //Rotate triangles
@@ -189,11 +191,11 @@ public:
             toProj.p[2] = rot * tri.p[2];
 
 
-            //Offset into the screen
-            toProj = toProj;
-            toProj.p[0].z += 10.0f;
-            toProj.p[1].z += 10.0f; 
-            toProj.p[2].z += 10.0f; 
+            ////Offset into the screen
+            //toProj = toProj;
+            //toProj.p[0].z += 10.0f;
+            //toProj.p[1].z += 10.0f; 
+            //toProj.p[2].z += 10.0f; 
 
 
             //Find vector from points 
