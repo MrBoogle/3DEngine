@@ -141,12 +141,15 @@ public:
         if (GetKey(VK_DOWN).bHeld) {
             vCamera.y += 8.0f * fElapsedTime;
         }
+        //Find relative left and right directions
+        vec3d right = { 0, 1, 0 };
+        right = right % lookDir;
         //Left/right
         if (GetKey(VK_LEFT).bHeld) {
-            vCamera.x -= 8.0f * fElapsedTime;
+            vCamera = vCamera - (8.0f * fElapsedTime * right);
         }
         if (GetKey(VK_RIGHT).bHeld) {
-            vCamera.x += 8.0f * fElapsedTime;
+            vCamera = vCamera + (8.0f * fElapsedTime * right);
         }
 
         //Forward/backwards
