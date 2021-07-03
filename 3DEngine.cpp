@@ -6,7 +6,7 @@
 #include <fstream>
 #include <strstream>
 #include <algorithm>
-#include "olcConsoleGameEngine.h"
+#include "olcConsoleGameEngineGL.h"
 #include "vec3d.h"
 #include "mat4x4.h"
 
@@ -236,7 +236,7 @@ public:
             if (normal * (toProj.p[0] - vCamera)< 0)
             {
                 //Lighting
-                vec3d light_direction = { 0.0f, 0.0f, -1.0f };
+                vec3d light_direction = -1 * lookDir;// { 0.0f, 0.0f, -1.0f };
                 //light_direction = makeRotY(fTheta) * light_direction;
                 light_direction = normalizeVec(light_direction);
 
