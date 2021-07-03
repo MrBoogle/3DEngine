@@ -13,6 +13,7 @@ mat4x4 makeIdentity() {
 }
 
 mat4x4 makeRotX(float fAngleRad) {
+    fAngleRad *= 3.141496 / 180;
     mat4x4 m;
     m.m[0][0] = 1.0f;
     m.m[1][1] = cosf(fAngleRad);

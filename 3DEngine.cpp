@@ -6,7 +6,7 @@
 #include <fstream>
 #include <strstream>
 #include <algorithm>
-#include "olcConsoleGameEngine.h"
+#include "olcConsoleGameEngineGL.h"
 #include "vec3d.h"
 #include "mat4x4.h"
 
@@ -188,7 +188,7 @@ public:
     bool OnUserCreate() override {
 
 
-        meshCube.LoadFromOBJFile("axis.obj");
+        meshCube.LoadFromOBJFile("mountains.obj");
 
         float fNear = 0.1f;
         float fFar = 1000.0f;
@@ -241,6 +241,9 @@ public:
         if (GetKey(L'D').bHeld) {
             yaw += 2.0f * fElapsedTime;
         }
+        if (GetKey(L'X').bHeld) {
+            fTheta += 2.0f * fElapsedTime;
+        }
 
         
         
@@ -250,7 +253,7 @@ public:
 
         mat4x4 matRotZ, matRotX, translate;
         
-        fTheta += 1.0f * fElapsedTime;
+        //fTheta += 1.0f * fElapsedTime;
 
         
         //Make translation matrix
@@ -269,13 +272,14 @@ public:
         std::vector<triangle> trianglesToRaster;
 
         //Create rotation around z and x axis and translate
-        //mat4x4 rot = makeRotZ(0) * makeRotX();
-        mat4x4 rot = makeRotZ(0) * makeRotX(180) * makeRotY(0);
+        //std::cout << fTheta << std::endl;
+        mat4x4 rot = makeRotX(180);
+        //mat4x4 rot = makeRotZ(0) * makeRotX(0) * makeRotY(0);
 
         rot = rot * translate;
 
         //Draw triangles
-        for (auto tri : meshCube.tris) {
+        for (auto const &tri : meshCube.tris) {
             triangle toProj;
 
             
@@ -326,7 +330,7 @@ public:
 
                 //Clip triangles that get too close to camera to improve performance (no longer dividing by numbers approaching 0)
                 triangle clipped[2];
-                int numClipped = clipTrianglePlane({ 0, 0, 2.1f }, {0, 0, 1}, toProj, clipped[0], clipped[1]);
+                int numClipped = clipTrianglePlane({ 0, 0, 0.1f }, {0, 0, 1}, toProj, clipped[0], clipped[1]);
 
                 for (int t = 0; t < numClipped; t++) {
                     toProj = clipped[t];
@@ -371,9 +375,9 @@ public:
             return z1 > z2;
             });
 
-        //Draw triangles to screen
-        for (auto& toProj : trianglesToRaster) {
-            
+
+        /*for (auto& toProj : trianglesToRaster) {
+
             FillTriangle(toProj.p[0].x, toProj.p[0].y,
                 toProj.p[1].x, toProj.p[1].y,
                 toProj.p[2].x, toProj.p[2].y,
@@ -383,7 +387,71 @@ public:
                 toProj.p[1].x, toProj.p[1].y,
                 toProj.p[2].x, toProj.p[2].y,
                 PIXEL_SOLID, FG_BLACK);
+        }*/
+
+        //Draw triangles to screen
+        for (auto& toRaster : trianglesToRaster) {
+            
+
+            triangle clipped[2];
+            std::list<triangle> q;
+            q.push_back(toRaster);
+            int newTris = 1;
+
+            for (int edge = 0; edge < 4; edge++) {
+                int trisToAdd = 0;
+
+                while (newTris > 0) {
+                    triangle test = q.front();
+                    q.pop_front();
+                    newTris--;
+
+                    switch (edge) 
+                    {
+                        //Top Edge
+                    case 0: trisToAdd = clipTrianglePlane({ 0, 0, 0 }, {0, 1, 0}, test, clipped[0], clipped[1]); 
+                        
+                        break;
+                        //Right edge
+                    case 1: trisToAdd = clipTrianglePlane({ (float)ScreenWidth() - 1, 0, 0 }, {-1, 0, 0}, test, clipped[0], clipped[1]);
+                        
+                        break;
+                        //Bottom edge
+                    case 2: trisToAdd = clipTrianglePlane({ 0, (float)ScreenHeight() - 1, 0}, {0, -1, 0}, test, clipped[0], clipped[1]);
+                        
+                        break;
+                        //Left edge
+                    case 3: trisToAdd = clipTrianglePlane({ 0, 0, 0 }, {1, 0, 0}, test, clipped[0], clipped[1]);
+                         
+                        break;
+                    }
+                    
+                    for (int newT = 0; newT < trisToAdd; newT++) {
+                        q.push_back(clipped[newT]);
+                        
+                    }
+                    
+                }
+                newTris = q.size();
+            }
+            
+            for (auto& toProj : q) {
+                FillTriangle(toProj.p[0].x, toProj.p[0].y,
+                    toProj.p[1].x, toProj.p[1].y,
+                    toProj.p[2].x, toProj.p[2].y,
+                    toProj.sym, toProj.col);
+
+                /*DrawTriangle(toProj.p[0].x, toProj.p[0].y,
+                    toProj.p[1].x, toProj.p[1].y,
+                    toProj.p[2].x, toProj.p[2].y,
+                    PIXEL_SOLID, FG_BLACK);*/
+            }
+            
+
+            
         }
+
+
 
 
         return true;
