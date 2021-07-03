@@ -90,3 +90,16 @@ vec3d operator*(mat4x4 const& m, vec3d const& v1) {
     return v;
 }
 
+//Returns point where a vector intersections with a a plane
+vec3d vecPlaneInter(vec3d const& point, vec3d& normal, vec3d& lineStart, vec3d& lineEnd) {
+    normal = normalizeVec(normal);
+    float planeConstant = -(normal * point);
+    float a = lineStart * normal;
+    float b = lineEnd * normal;
+    float t = (-planeConstant - a) / (b - a); //Idk what this is, need to research a bit more
+    vec3d startToEnd = lineEnd - lineStart;
+    vec3d lineToIntersect = t * startToEnd;
+    return lineStart + lineToIntersect;
+
+
+}

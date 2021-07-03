@@ -6,7 +6,7 @@
 #include <fstream>
 #include <strstream>
 #include <algorithm>
-#include "olcConsoleGameEngineGL.h"
+#include "olcConsoleGameEngine.h"
 #include "vec3d.h"
 #include "mat4x4.h"
 
@@ -75,6 +75,78 @@ private:
 
     float yaw;
 
+
+    int clipTrianglePlane(vec3d point, vec3d normal, triangle &in, triangle &out1, triangle &out2) {
+        //Insure normal vector is a unit vector
+        normal = normalizeVec(normal);
+
+        //Return signed (shortest) distance from point to plane
+        auto getDist = [&](vec3d & p) {
+            return (p * normal - point * normal);
+        };
+
+        //Group points depending on whether they lie above or below a plane (inside or outside the boundaries of the screen)
+        vec3d* insidePoints[3];
+        vec3d* outsidePoints[3];
+        int numInside = 0;
+        int numOutside = 0;
+
+        //Calculate distances from each point of the triangle we passed in to the plane of reference
+        float distances[3];
+        for (int p : distances) {
+            distances[p] = getDist(in.p[p]);
+        }
+        //Group points into different categories defined above (inside and outside)
+        for (int d : distances) {
+            if (distances[d] >= 0) {
+                insidePoints[numInside++] = &in.p[d];
+            }
+            else {
+                outsidePoints[numOutside++] = &in.p[d];
+            }
+        }
+
+        //Classify triangle passed in (outside, inside, partially inside)
+        if (!numInside) {
+            return 0;
+        }
+        if (!numOutside) {
+            //If all points are inside (the whole triangle is inside) set the output to equal the input (no clipping necessary)
+            out1 = in;
+            return 1;
+        }
+        if (numInside == 1) //Only 1 point inside, need to reconstruct triangle
+        {
+            //Copy color info into reconstructed triangle
+            out1.sym = in.sym;
+            out1.col = in.col;
+
+            out1.p[0] = *insidePoints[0];
+            out1.p[1] = vecPlaneInter(point, normal, *insidePoints[0], *outsidePoints[0]);
+            out1.p[2] = vecPlaneInter(point, normal, *insidePoints[0], *outsidePoints[1]);
+            
+            return 1;
+        }
+        if (numInside == 2) //Two points inside, need to reconstruct triangle into 2 new triangles
+        {
+            //Copy color info into reconstructed triangles
+            out2.sym = out1.sym = in.sym;
+            out2.col = out1.col = in.col;
+
+            //Construct first new triangle
+            out1.p[0] = *insidePoints[0];
+            out1.p[1] = *insidePoints[1];
+            out1.p[2] = vecPlaneInter(point, normal, *insidePoints[1], *outsidePoints[0]);
+
+            //Construct second triangle
+            out2.p[0] = out1.p[2];
+            out2.p[1] = vecPlaneInter(point, normal, *insidePoints[0], *outsidePoints[0]);
+            out2.p[2] = *insidePoints[0];
+
+            return 2;
+
+        }
+    }
 
     // Taken From Command Line Webcam Video of Javidx9
     CHAR_INFO GetColour(float lum)

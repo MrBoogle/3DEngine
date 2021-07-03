@@ -41,4 +41,7 @@ vec3d normalizeVec(vec3d const& v);
 //Matrix multiplication
 vec3d operator*(mat4x4 const& m, vec3d const& v1);
 
+//Returns point where a vector intersections with a a plane
+vec3d vecPlaneInter(vec3d const& point, vec3d& normal, vec3d& lineStart, vec3d& lineEnd);
+
 
