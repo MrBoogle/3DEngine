@@ -93,11 +93,11 @@ private:
 
         //Calculate distances from each point of the triangle we passed in to the plane of reference
         float distances[3];
-        for (int p : distances) {
+        for (int p = 0; p < 3; p++) {
             distances[p] = getDist(in.p[p]);
         }
         //Group points into different categories defined above (inside and outside)
-        for (int d : distances) {
+        for (int d = 0; d < 3; d++) {
             if (distances[d] >= 0) {
                 insidePoints[numInside++] = &in.p[d];
             }
@@ -119,7 +119,7 @@ private:
         {
             //Copy color info into reconstructed triangle
             out1.sym = in.sym;
-            out1.col = in.col;
+            out1.col = FG_RED;
 
             out1.p[0] = *insidePoints[0];
             out1.p[1] = vecPlaneInter(point, normal, *insidePoints[0], *outsidePoints[0]);
@@ -131,7 +131,8 @@ private:
         {
             //Copy color info into reconstructed triangles
             out2.sym = out1.sym = in.sym;
-            out2.col = out1.col = in.col;
+            out2.col =  FG_BLUE;
+            out1.col = FG_GREEN;
 
             //Construct first new triangle
             out1.p[0] = *insidePoints[0];
@@ -323,37 +324,42 @@ public:
                 toProj.p[1] = matView * toProj.p[1];
                 toProj.p[2] = matView * toProj.p[2];
 
+                //Clip triangles that get too close to camera to improve performance (no longer dividing by numbers approaching 0)
+                triangle clipped[2];
+                int numClipped = clipTrianglePlane({ 0, 0, 2.1f }, {0, 0, 1}, toProj, clipped[0], clipped[1]);
 
-                // Project triangles from 3D --> 2D
-                toProj.p[0] = matProj * toProj.p[0];
-                toProj.p[1] = matProj * toProj.p[1];
-                toProj.p[2] = matProj * toProj.p[2];
+                for (int t = 0; t < numClipped; t++) {
+                    toProj = clipped[t];
+                    // Project triangles from 3D --> 2D
+                    toProj.p[0] = matProj * toProj.p[0];
+                    toProj.p[1] = matProj * toProj.p[1];
+                    toProj.p[2] = matProj * toProj.p[2];
 
-                toProj.col = c.Attributes;
-                toProj.sym = c.Char.UnicodeChar;
-
-
-                //Scale into view
-                toProj.p[0].x += 1.0f;
-                toProj.p[0].y += 1.0f;
-
-                toProj.p[1].x += 1.0f;
-                toProj.p[1].y += 1.0f;
-
-                toProj.p[2].x += 1.0f;
-                toProj.p[2].y += 1.0f;
-
-                toProj.p[0].x *= 0.5f * (float)ScreenWidth();
-                toProj.p[0].y *= 0.5f * (float)ScreenHeight();
-
-                toProj.p[1].x *= 0.5f * (float)ScreenWidth();
-                toProj.p[1].y *= 0.5f * (float)ScreenHeight();
-
-                toProj.p[2].x *= 0.5f * (float)ScreenWidth();
-                toProj.p[2].y *= 0.5f * (float)ScreenHeight();
+                    
 
 
-                trianglesToRaster.push_back(toProj);
+                    //Scale into view
+                    toProj.p[0].x += 1.0f;
+                    toProj.p[0].y += 1.0f;
+
+                    toProj.p[1].x += 1.0f;
+                    toProj.p[1].y += 1.0f;
+
+                    toProj.p[2].x += 1.0f;
+                    toProj.p[2].y += 1.0f;
+
+                    toProj.p[0].x *= 0.5f * (float)ScreenWidth();
+                    toProj.p[0].y *= 0.5f * (float)ScreenHeight();
+
+                    toProj.p[1].x *= 0.5f * (float)ScreenWidth();
+                    toProj.p[1].y *= 0.5f * (float)ScreenHeight();
+
+                    toProj.p[2].x *= 0.5f * (float)ScreenWidth();
+                    toProj.p[2].y *= 0.5f * (float)ScreenHeight();
+
+
+                    trianglesToRaster.push_back(toProj);
+                }
             }
 
         }
@@ -373,10 +379,10 @@ public:
                 toProj.p[2].x, toProj.p[2].y,
                 toProj.sym, toProj.col);
 
-            /*DrawTriangle(toProj.p[0].x, toProj.p[0].y,
+            DrawTriangle(toProj.p[0].x, toProj.p[0].y,
                 toProj.p[1].x, toProj.p[1].y,
                 toProj.p[2].x, toProj.p[2].y,
-                PIXEL_SOLID, FG_BLACK);*/
+                PIXEL_SOLID, FG_BLACK);
         }
 
 
