@@ -188,7 +188,7 @@ public:
     bool OnUserCreate() override {
 
 
-        meshCube.LoadFromOBJFile("mountains.obj");
+        meshCube.LoadFromOBJFile("mmm.obj");
 
         float fNear = 0.1f;
         float fFar = 1000.0f;
@@ -248,7 +248,7 @@ public:
         
         
         //Clear screen
-        Fill(0, 0, ScreenWidth(), ScreenHeight(), PIXEL_SOLID, FG_BLACK);
+        Fill(0, 0, ScreenWidth(), ScreenHeight(), PIXEL_SOLID, FG_GREY);
 
 
         mat4x4 matRotZ, matRotX, translate;
@@ -313,7 +313,7 @@ public:
             if (normal * (toProj.p[0] - vCamera)< 0)
             {
                 //Lighting
-                vec3d light_direction = -1 * lookDir;// { 0.0f, 0.0f, -1.0f };
+                vec3d light_direction = { 0.0f, -1.0f, -1.0f };
                 //light_direction = makeRotY(fTheta) * light_direction;
                 light_direction = normalizeVec(light_direction);
 
@@ -441,7 +441,7 @@ public:
                     toProj.p[2].x, toProj.p[2].y,
                     toProj.sym, toProj.col);
 
-                /*DrawTriangle(toProj.p[0].x, toProj.p[0].y,
+               /* DrawTriangle(toProj.p[0].x, toProj.p[0].y,
                     toProj.p[1].x, toProj.p[1].y,
                     toProj.p[2].x, toProj.p[2].y,
                     PIXEL_SOLID, FG_BLACK);*/
