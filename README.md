@@ -5,8 +5,8 @@ This is a software renderer pipelined entirely in the CPU that can render meshes
  
  ## Usage on Windows
  
- ###Installation: 
+ ### Installation: 
  Download 3DEngine.exe and 3DModel.obj. Run the executable with both files in the same directory. 
  
- ###Controls:
+ ### Controls:
  Use W and S to move the camera forwards and backwards, A and D to rotate the camera, and the arrow keys to move up, down, left, or right.
