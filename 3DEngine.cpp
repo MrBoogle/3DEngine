@@ -188,7 +188,7 @@ public:
     bool OnUserCreate() override {
 
 
-        meshCube.LoadFromOBJFile("mmm.obj");
+        meshCube.LoadFromOBJFile("3DModel.obj");
 
         float fNear = 0.1f;
         float fFar = 1000.0f;
@@ -279,6 +279,7 @@ public:
         rot = rot * translate;
 
         //Draw triangles
+        //#pragma omp parallel for
         for (auto const &tri : meshCube.tris) {
             triangle toProj;
 
